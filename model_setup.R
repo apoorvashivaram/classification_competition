@@ -44,6 +44,7 @@ loan_fold <- vfold_cv(loan_train, v = 5, repeats = 3, strata = hi_int_prncp_pd)
 # recipes -----
 loan_recipe <- recipe(hi_int_prncp_pd ~ ., data = loan_train) %>% 
   step_rm(id) %>%
+  step_unknown(purpose, new_level = "new_purpose") %>% 
   step_other(all_nominal(), -all_outcomes(), threshold = 0.1) %>% 
   step_dummy(all_nominal(), -all_outcomes()) %>% 
   step_normalize(all_predictors()) %>% 
@@ -55,14 +56,15 @@ loan_recipe %>%
   prep(loan_train) %>% 
   bake(new_data = NULL)
 
-# recipe for elastic net
-loan_recipe_elnet <- recipe(hi_int_prncp_pd ~ ., data = loan_train) %>% 
-  step_rm(id) %>%
-  step_other(all_nominal(), -all_outcomes(), threshold = 0.1) %>% 
-  step_dummy(all_nominal(), -all_outcomes(), one_hot = TRUE) %>% 
-  step_normalize(all_predictors()) %>% 
-  step_interact(hi_int_prncp_pd ~ (.)^2) %>% 
-  step_zv(all_predictors())
+# # recipe for elastic net
+# loan_recipe_elnet <- recipe(hi_int_prncp_pd ~ ., data = loan_train) %>% 
+#   step_rm(id) %>%
+#   step_unknown(purpose, new_level = "new_purpose") %>% 
+#   step_other(all_nominal(), -all_outcomes(), threshold = 0.1) %>% 
+#   step_dummy(all_nominal(), -all_outcomes(), one_hot = TRUE) %>% 
+#   step_normalize(all_predictors()) %>% 
+#   step_interact(hi_int_prncp_pd ~ (.)^2) %>% 
+#   step_zv(all_predictors())
 
 # bake the recipes to verify
 loan_recipe_elnet %>% 
@@ -189,4 +191,14 @@ rf_workflow_tuned <- rf_workflow %>%
 
 rf_results <- fit(rf_workflow_tuned, loan_train)
 
+final_rf_results <- rf_results %>%
+  predict(new_data = loan_test) %>%
+  bind_cols(loan_test %>%
+              select(id)) %>%
+  mutate(Category = .pred_class,
+         Id = id) %>%
+  select(Id, Category)
 
+final_rf_results
+
+write_csv(final_rf_results, "kaggle_submission/rf_output.csv")
