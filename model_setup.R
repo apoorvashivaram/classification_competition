@@ -5,6 +5,9 @@ library(tidyverse)
 library(tidymodels)
 library(skimr)
 
+# Resolve common conflicts
+tidymodels_prefer()
+
 # set seed
 set.seed(3485)
 
@@ -44,7 +47,7 @@ loan_fold <- vfold_cv(loan_train, v = 5, repeats = 3, strata = hi_int_prncp_pd)
 # recipes -----
 loan_recipe <- recipe(hi_int_prncp_pd ~ ., data = loan_train) %>% 
   step_rm(id) %>%
-  step_unknown(purpose, new_level = "new_purpose") %>% 
+  # step_unknown(purpose, new_level = "new_purpose") %>% 
   step_other(all_nominal(), -all_outcomes(), threshold = 0.1) %>% 
   step_dummy(all_nominal(), -all_outcomes()) %>% 
   step_normalize(all_predictors()) %>% 
@@ -66,10 +69,10 @@ loan_recipe %>%
 #   step_interact(hi_int_prncp_pd ~ (.)^2) %>% 
 #   step_zv(all_predictors())
 
-# bake the recipes to verify
-loan_recipe_elnet %>% 
-  prep(loan_train) %>% 
-  bake(new_data = NULL)
+# # bake the recipes to verify
+# loan_recipe_elnet %>% 
+#   prep(loan_train) %>% 
+#   bake(new_data = NULL)
 
 # save necessary objects for tuning ----
 # save(loan_fold, loan_recipe, loan_recipe_elnet, file = "model_info/loan_setup.rda")

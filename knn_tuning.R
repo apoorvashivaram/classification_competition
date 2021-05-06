@@ -5,6 +5,9 @@ library(tidyverse)
 library(tidymodels)
 library(tictoc)
 
+# Resolve common conflicts
+tidymodels_prefer()
+
 # set seed ----
 set.seed(1289)
 
