@@ -4,6 +4,7 @@
 library(tidyverse)
 library(tidymodels)
 library(skimr)
+library(corrplot)
 
 # Resolve common conflicts
 tidymodels_prefer()
@@ -14,8 +15,8 @@ set.seed(3485)
 # load data ----
 # training data
 loan_train <- read_csv("data/train.csv") %>% 
-  mutate(hi_int_prncp_pd = factor(hi_int_prncp_pd, levels = c(0, 1), labels = c("principal", "interest"))) %>% 
-  mutate_at(c("addr_state", "application_type", "emp_length", "grade", 
+  mutate(hi_int_prncp_pd = factor(hi_int_prncp_pd, levels = c(0, 1))) %>%
+  mutate_at(c("addr_state", "application_type", "emp_length", "grade",
               "home_ownership", "initial_list_status", "purpose", "sub_grade", "term", "verification_status"), as.factor)
 
 
@@ -41,12 +42,21 @@ loan_train %>%
 naniar::any_miss(loan_train)
 naniar::any_miss(loan_test)
 
+# corrplot
+loan_train %>% 
+  select(-c(addr_state, earliest_cr_line, emp_title, last_credit_pull_d)) %>% 
+  mutate_if(is.character, as.factor) %>%
+  mutate_if(is.factor, as.integer) %>%
+  cor() %>% 
+  corrplot(method = "circle")
+
 # resampling via cross-validation ----
 loan_fold <- vfold_cv(loan_train, v = 5, repeats = 3, strata = hi_int_prncp_pd)
 
 # recipes -----
-loan_recipe <- recipe(hi_int_prncp_pd ~ ., data = loan_train) %>% 
-  step_rm(id) %>%
+loan_recipe <- recipe(hi_int_prncp_pd ~ grade + initial_list_status + int_rate + loan_amnt + out_prncp_inv + sub_grade + term,
+                      data = loan_train) %>% 
+  # step_rm(id, purpose, earliest_cr_line, emp_title, last_credit_pull_d) %>%
   # step_unknown(purpose, new_level = "new_purpose") %>% 
   step_other(all_nominal(), -all_outcomes(), threshold = 0.1) %>% 
   step_dummy(all_nominal(), -all_outcomes()) %>% 
@@ -75,7 +85,9 @@ loan_recipe %>%
 #   bake(new_data = NULL)
 
 # save necessary objects for tuning ----
-# save(loan_fold, loan_recipe, loan_recipe_elnet, file = "model_info/loan_setup.rda")
+# save(loan_fold, loan_recipe,
+#      # loan_recipe_elnet,
+#      file = "model_info/loan_setup.rda")
 
 # tuning models & separate R scripts ----
 # elastic net -- en_tuning.R
@@ -142,12 +154,16 @@ mars_tune %>%
 # select best model
 tune_results <- tibble(
   model_type = c("Nearest Neighbors", 
-                 "Random Forest", "Boosted Tree", 
+                 "Random Forest", "Boosted Tree",
                  "SVM Polynomial",
-                 "SVM RBF", 
-                 "Neural Network", "MARS"),
-  tune_info = list(knn_tune, rf_tune, bt_tune, svmp_tune, 
-                   svm_rbf_tune, mlp_tune, mars_tune),
+                 "SVM RBF",
+                 "Neural Network",
+                 "MARS"),
+  tune_info = list(knn_tune, 
+                   rf_tune, bt_tune, 
+                   svmp_tune,
+                   svm_rbf_tune, mlp_tune,
+                   mars_tune),
   assessment_info = map(tune_info, collect_metrics),
   best_model = map(tune_info, ~ select_best(.x, metric = "accuracy"))
 )
@@ -162,9 +178,11 @@ tune_results %>%
 tune_runtime <- tibble(
   run_time = list(
     # en_runtime, 
-    knn_runtime, rf_runtime, bt_runtime, 
-    # svmp_runtime, 
-    svm_rbf_runtime, mlp_runtime, mars_runtime),
+    knn_runtime, 
+    rf_runtime, bt_runtime,
+    svmp_runtime,
+    svm_rbf_runtime, mlp_runtime, 
+    mars_runtime),
     ) %>% 
   unnest_wider(run_time) %>% 
   rename(run_time = "...1") %>% 
@@ -192,8 +210,10 @@ tune_results %>%
 rf_workflow_tuned <- rf_workflow %>% 
   finalize_workflow(select_best(rf_tune, metric = "accuracy"))
 
+# fit to training data
 rf_results <- fit(rf_workflow_tuned, loan_train)
 
+# predict on testing data
 final_rf_results <- rf_results %>%
   predict(new_data = loan_test) %>%
   bind_cols(loan_test %>%
@@ -202,6 +222,8 @@ final_rf_results <- rf_results %>%
          Id = id) %>%
   select(Id, Category)
 
+# check final results
 final_rf_results
 
+# write out file for kaggle submission
 write_csv(final_rf_results, "kaggle_submission/rf_output.csv")
