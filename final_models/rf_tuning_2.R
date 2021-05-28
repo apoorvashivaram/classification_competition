@@ -54,4 +54,4 @@ toc(log = TRUE)
 rf_runtime <- tic.log(format = TRUE)
 
 # write out results and workflow ---
-save(rf_tune, rf_workflow, rf_runtime, file = "final_models/model_info/rf_tune_2.rda")
+save(rf_tune, rf_workflow, rf_runtime, file = "model_info/rf_tune_2.rda")

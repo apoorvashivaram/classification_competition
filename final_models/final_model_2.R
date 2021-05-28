@@ -84,16 +84,16 @@ save(loan_fold, loan_recipe_v2, file = "final_models/model_info/loan_setup_2.rda
 
 
 # random forest
-load(file = "set_2/model_info_v2/rf_tune_v2.rda")
+load(file = "final_models/model_info/rf_tune_2.rda")
 
 # # nearest neighbors
-# load(file = "set_2/model_info_v2/knn_tune_v2.rda")
+# load(file = "final_models/model_info/knn_tune_v2.rda")
 # 
 # # boosted tree
-# load(file = "set_2/model_info_v2/bt_tune_v2.rda")
+# load(file = "final_models/model_info/bt_tune_v2.rda")
 # 
 # # single layer neural network - mlp
-# load(file = "set_2/model_info_v2/mlp_tune_v2.rda")
+# load(file = "final_models/model_info/mlp_tune_v2.rda")
 
 
 # autoplots ----
@@ -183,4 +183,4 @@ final_rf_results <- rf_results %>%
 final_rf_results
 
 # # write out file for kaggle submission
-# write_csv(final_rf_results, "final_models/kaggle_submission/rf_output_v2.csv")
+# write_csv(final_rf_results, "final_models/kaggle_submission/rf_output_2.csv")

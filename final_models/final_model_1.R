@@ -163,12 +163,14 @@ tune_results %>%
 # create a table with runtimes
 tune_runtime <- tibble(
   run_time = list(
-    knn_runtime, 
-    rf_runtime, bt_runtime,
-    svmp_runtime,
-    svm_rbf_runtime, mlp_runtime, 
-    mars_runtime),
-) %>% 
+    # knn_runtime, 
+    rf_runtime # , 
+    # bt_runtime,
+    # svmp_runtime,
+    # svm_rbf_runtime, mlp_runtime, 
+    # mars_runtime
+    )
+  ) %>% 
   unnest_wider(run_time) %>% 
   rename(run_time = "...1") %>% 
   separate(run_time, into = c("model_type", "run_time"), sep = ": ") %>% 
@@ -216,4 +218,4 @@ final_rf_results <- rf_results %>%
 final_rf_results
 
 # # write out file for kaggle submission
-write_csv(final_rf_results, "model_info/kaggle_submission/rf_output_model_1.csv")
+write_csv(final_rf_results, "final_models/kaggle_submission/rf_output_model_1.csv")
