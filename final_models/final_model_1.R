@@ -218,4 +218,4 @@ final_rf_results <- rf_results %>%
 final_rf_results
 
 # # write out file for kaggle submission
-write_csv(final_rf_results, "final_models/kaggle_submission/rf_output_model_1.csv")
+# write_csv(final_rf_results, "final_models/kaggle_submission/rf_output_1.csv")
